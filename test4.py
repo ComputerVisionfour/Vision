@@ -12,19 +12,20 @@ import math
 data=[]
 
 first = cv2.imread("pop_resize_009.jpg", cv2.IMREAD_COLOR) #이미지 열기
-img = cv2.resize(first, dsize=(500, 500), interpolation=cv2.INTER_AREA) #이미지 resize
+img = cv2.resize(first, dsize=(800, 800), interpolation=cv2.INTER_AREA) #이미지 resize
 img2 = img.copy() #이미지 가공 전 copy
 img_gray = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY) # 이미지 그레이스케일
 
+edge = cv2.Canny(img_gray, 100, 100) # 캐니엣지
 
-adapt = cv2.adaptiveThreshold(img_gray,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,19,3) # 이미지 이진화
+#denoise = cv2.medianBlur(edge, 5) # 미디안 블러를 이용한 노이즈 제거
 
-denoise = cv2.medianBlur(adapt, 5) # 미디안 블러를 이용한 노이즈 제거
+#adapt = cv2.adaptiveThreshold(denoise,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,19,3) # 이미지 이진화
 
-denoise2 = cv2.GaussianBlur(adapt, (5, 5), 0) # 가우시안 블러를 이용한 노이즈 제거
+#denoise2 = cv2.GaussianBlur(adapt, (5, 5), 0) # 가우시안 블러를 이용한 노이즈 제거
 
 
-cv2.imshow("denoise", denoise)
+cv2.imshow("edge", edge)
 cv2.waitKey(0) # 키를 누를 때까지 창을 띄워놓음
 cv2.destroyAllWindows() # 키보드 자판의 아무 키나 누르면 창이 닫힘
 
@@ -35,13 +36,13 @@ kernel_size_col = 3 # 이 값이 커질수록 침식 또는 팽창 효과가 강
 
 kernel = np.ones((kernel_size_row, kernel_size_col), np.uint8)
 
-erosion_image = cv2.erode(denoise, kernel, iterations=1)  # 침식연산이 적용된 이미지
+erosion_image = cv2.erode(edge, kernel, iterations=1)  # 침식연산이 적용된 이미지
                                                            # iterations를 2 이상으로 설정하면 반복 적용됨
-dilation_image = cv2.dilate(denoise, kernel, iterations=1)  # 팽창연산이 적용된 이미지
+dilation_image = cv2.dilate(edge, kernel, iterations=1)  # 팽창연산이 적용된 이미지
                                                              # iterations를 2 이상으로 설정하면 반복 적용됨
 #==========================================================                                               
 
-Reversed = cv2.bitwise_not(denoise) # 비트 반전을 통한 reverse
+Reversed = cv2.bitwise_not(erosion_image) # 비트 반전을 통한 reverse
 
 #cv2.imshow("Reversed", Reversed)
 #cv2.waitKey(0) # 키를 누를 때까지 창을 띄워놓음
@@ -49,7 +50,7 @@ Reversed = cv2.bitwise_not(denoise) # 비트 반전을 통한 reverse
 
 # 허프변환을 이용한 원 검출
 try:
-    circles = cv2.HoughCircles(Reversed, cv2.HOUGH_GRADIENT, 2, 20, \
+    circles = cv2.HoughCircles(erosion_image, cv2.HOUGH_GRADIENT, 2, 20, \
              param1 = 500, param2 = 80, minRadius = 25, maxRadius = 40)
     circles = np.uint16(np.around(circles))
 except:
@@ -59,7 +60,7 @@ for i in circles[0]:
     x = i[0].item()
     y = i[1].item()
     cv2.rectangle(img2,(x-30,y-30),(x+30,y+30),(0,255,0),2)
-    img_crop = denoise[x-30:x+30 ,y-30:y+30 ] # 이미지 크롭
+    img_crop = erosion_image[x-30:x+30 ,y-30:y+30 ] # 이미지 크롭
     pix_sum = np.sum(img_crop) # 픽셀값을 모두 더하기
     pix_sum_cnt = (int)(pix_sum/255) # 이미지에서 흰색 픽셀의 개수에 해당
     data.append(pix_sum_cnt)
@@ -68,6 +69,6 @@ for i in circles[0]:
 sor = np.sort(data)
 print(sor)
 
-cv2.imshow("DetectionCircles", img2)
+cv2.imshow("DetectionCircles", erosion_image)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
