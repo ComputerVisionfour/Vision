@@ -10,7 +10,7 @@ import numpy as np # numpy import
 #========================================Library import========
 
 # 이미지 열기
-filename = "pop_ref_002.jpg" # 입력 이미지 파일명을 적으세요.
+filename = "pop_resize_013.jpg" # 입력 이미지 파일명을 적으세요.
 
 #========================================create List data======
 prediction = [0]*28 # 각 푸시팝의 상태를 데이터 리스트로 저장
@@ -30,7 +30,7 @@ while True:
     height, width, channel = img.shape
     matrix = cv2.getRotationMatrix2D((width/2, height/2), 45*Degree, 1)
     Warp = cv2.warpAffine(first_copy, matrix, (width, height))         #돌린사진
-    Crop = Warp[0:130 , 250:550]
+    Crop = Warp[5:130 , 250:550]
     resize = cv2.resize(Crop, (1,1))
     hsv = cv2.cvtColor(resize, cv2.COLOR_BGR2HSV)
     Degree+=1
